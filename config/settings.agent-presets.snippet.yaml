@@ -1,8 +1,9 @@
 # Example: make the caveman preset the default for every new session.
 #
-# Merge this key into ~/.dsh/settings.yaml. The value is read at boot, so a
-# restart is required; sessions already created keep the preset they were
-# composed from.
+# Merge this key into ~/.dsh/settings.yaml. No restart is required: `defaultId`
+# reads through on every call and discovery is unmemoized, so the next session
+# created picks it up. Sessions already created keep the preset they were
+# composed from, so an existing one will not gain the persona.
 
 agent-presets:
   default: qwen-caveman

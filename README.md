@@ -116,14 +116,13 @@ bundle disables) is not the instance a session uses. Patching it there is a no-o
 ### 3.1 User preset (both changes)
 
 Copy the shipped preset you want and edit the copy — `~/.dsh/.agent-presets/<id>/`
-is the writable preset root.
+is the writable preset root (`USER_PRESET_DIR` in
+`packages/preset/agent-presets/src/discovery.ts` is the authority for that path).
 
 ```bash
 SRC=<dsh-checkout>/packages/preset/agent-presets/presets/standard
 DST=~/.dsh/.agent-presets/qwen-caveman
 mkdir -p "$DST" && cp -r "$SRC/." "$DST/"
-find "$DST" -type d -exec chmod 700 {} +
-find "$DST" -type f -exec chmod 600 {} +
 ```
 
 Then apply the two patches with `git apply` (they apply cleanly and reproduce the
@@ -134,6 +133,30 @@ cd "$DST"
 git apply /path/to/dsh-compress-caveman/patches/01-persona-caveman.diff
 git apply /path/to/dsh-compress-caveman/patches/02-compaction-maxtokens.diff
 ```
+
+Then give the copy its own identity, and set the modes **last**:
+
+```bash
+cat > "$DST/preset.yml" <<'EOF'
+name: 标准模式（caveman）
+description: 标准模式的全部能力，外加穴居人（极简）表达风格；压缩摘要上限 16384。
+order: 5
+EOF
+
+# Modes last, not before the patches: `git apply` rewrites agent.cordis.yml and
+# re-creates it with the umask mode (644), silently undoing a chmod run earlier.
+find "$DST" -type d -exec chmod 700 {} +
+find "$DST" -type f -exec chmod 600 {} +
+```
+
+**Do not skip the `preset.yml` edit.** `cp -r "$SRC/."` copies the base preset's
+display metadata too, so an unedited copy is byte-identical to the shipped
+`standard` — same `name` (`标准模式`) and same `order: 1`. The picker then lists two
+indistinguishable entries. The custom preset *is* present, selectable and working;
+nothing tells you which of the two it is. Give it a distinct `name` and an `order`
+above the shipped four (`standard` 1, `ptc` 2, `minimal` 3, `cordis` 4 — the roster
+sorts by `order`). An `order` that merely ties one of theirs leaves the position
+dependent on discovery order.
 
 `patches/00-all-changes.diff` is both hunks in one file, for reading. On this host
 GNU `patch -p1` reported success while changing nothing, so prefer `git apply`.
@@ -181,9 +204,17 @@ agent-presets:
   default: qwen-caveman
 ```
 
-Read at boot, so this one needs a restart. Preset *contents* are read when a session
-is created, so later edits to the composition need no restart — but sessions already
-created keep the composition they were composed from.
+**No restart needed** — for a *new* session. `defaultId` reads through on every
+call (see the comment at `packages/preset/agent-presets/src/index.ts:186`, and the
+live `settings.register` just below it), and discovery is unmemoized, so a session
+created after the edit resolves the new default and the new preset contents.
+
+Observed: a server booted at 17:44, `settings.yaml` written at 17:59, and a session
+created at 18:05 recorded `agentPreset: "qwen-caveman"` — with no restart in
+between.
+
+Sessions **already created** keep the composition they were composed from, so an
+existing session will not gain the persona or the raised ceiling; start a new one.
 
 ### 3.3 Optional: keep the deployment persona (minimal preset only)
 
@@ -208,7 +239,7 @@ restated: a patch replaces the targeted row's whole `config` rather than deep-me
 
 ## 4. Verify
 
-**No restart needed for preset contents; a new session is required.**
+**No restart needed — a new session is required.**
 
 ```bash
 # 1. the new session's system prompt carries the persona
