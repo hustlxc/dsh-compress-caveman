@@ -1,0 +1,8 @@
+# Example: make the caveman preset the default for every new session.
+#
+# Merge this key into ~/.dsh/settings.yaml. The value is read at boot, so a
+# restart is required; sessions already created keep the preset they were
+# composed from.
+
+agent-presets:
+  default: qwen-caveman

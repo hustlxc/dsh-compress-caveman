@@ -1,0 +1,17 @@
+diff --git a/agent.cordis.yml b/agent.cordis.yml
+index b2c26e4..e4ec5b5 100644
+@@ -144,6 +157,14 @@
+   config:
+     - id: compaction-basic
+       name: '@deepseek-ai/dsh-compaction-basic'
++      # Reasoning and the checkpoint summary share this max_tokens ceiling.
++      # A local reasoning model spends 2.4k-4.5k tokens of it thinking before it
++      # writes anything, so the shipped 8192 truncates the summary
++      # (finish_reason: length) and compaction fails with "summarization
++      # truncated at the token cap". llama.cpp honours max_tokens well past
++      # this value (verified to 20000).
++      config:
++        maxTokens: 16384
+ 
+     - id: command-compact
+       name: '@deepseek-ai/dsh-command-compact'

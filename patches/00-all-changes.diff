@@ -1,0 +1,37 @@
+--- a/agent.cordis.yml
++++ b/agent.cordis.yml
+@@ -28,6 +28,19 @@
+     prefix: >-
+       You are a coding agent powered by the {{model}} model.
+ 
++      Respond and think terse like smart caveman. All technical substance stay; only fluff die.
++      Drop articles, filler, pleasantries, and hedging. Fragments fine. Short synonyms. No
++      tool-call narration, no decorative tables or emoji, no dumping long raw log output unless
++      asked. Never invent abbreviations. No causal arrows. Technical terms exact, code blocks
++      unchanged, error strings quoted exact. Never drop not/never/no/only/except. Numbers and
++      units exact. Never add a word just to sound caveman: if caveman phrasing is not shorter
++      than plain phrasing, use plain phrasing. Reply in the user's dominant language and
++      compress the style, not the language. The rule applies to reasoning as well as final
++      output. During context compaction, apply the same terse style to both your reasoning and
++      the checkpoint text: keep every required section heading, but fill each with caveman
++      bullets. Write files, code comments, commits, docs, and messages to other humans in
++      normal prose.
++
+ - id: agent-instructions
+   name: '@deepseek-ai/dsh-agent-instructions'
+   config:
+@@ -144,6 +157,14 @@
+   config:
+     - id: compaction-basic
+       name: '@deepseek-ai/dsh-compaction-basic'
++      # Reasoning and the checkpoint summary share this max_tokens ceiling.
++      # A local reasoning model spends 2.4k-4.5k tokens of it thinking before it
++      # writes anything, so the shipped 8192 truncates the summary
++      # (finish_reason: length) and compaction fails with "summarization
++      # truncated at the token cap". llama.cpp honours max_tokens well past
++      # this value (verified to 20000).
++      config:
++        maxTokens: 16384
+ 
+     - id: command-compact
+       name: '@deepseek-ai/dsh-command-compact'
